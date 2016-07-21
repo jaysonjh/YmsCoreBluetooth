@@ -365,23 +365,22 @@
  */
 - (void)peripheral:(CBPeripheral *)peripheral didUpdateValueForCharacteristic:(CBCharacteristic *)characteristic error:(NSError *)error {
     __weak YMSCBPeripheral *this = self;
-    _YMS_PERFORM_ON_MAIN_THREAD(^{
-        YMSCBService *btService = [this findService:characteristic.service];
-        YMSCBCharacteristic *yc = [btService findCharacteristic:characteristic];
+    YMSCBService *btService = [this findService:characteristic.service];
+    YMSCBCharacteristic *yc = [btService findCharacteristic:characteristic];
+    if (yc.cbCharacteristic.isNotifying) {
+        [btService notifyCharacteristicHandler:yc error:error];
         
-        if (yc.cbCharacteristic.isNotifying) {
-            [btService notifyCharacteristicHandler:yc error:error];
-            
-        } else {
-            if ([yc.readCallbacks count] > 0) {
-                [yc executeReadCallback:characteristic.value error:error];
-            }
+    } else {
+        if ([yc.readCallbacks count] > 0) {
+            [yc executeReadCallback:characteristic.value error:error];
         }
-        
+    }
+    _YMS_PERFORM_ON_MAIN_THREAD(^{
         if ([this.delegate respondsToSelector:@selector(peripheral:didUpdateValueForCharacteristic:error:)]) {
             [this.delegate peripheral:peripheral didUpdateValueForCharacteristic:characteristic error:error];
         }
     });
+
 }
 
 
